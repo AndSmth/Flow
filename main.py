@@ -72,9 +72,9 @@ def main(network, source, destination, f):
             if flow[i][j][0] > 0:
                 length_network[j][i] = -network[i][j][1]
 
-    potentials = []
+    potentials = {}
     for i in range(nn):
-        potentials.append(Bellman_Ford(length_network, source, i)[1])
+        potentials[i] = (Bellman_Ford(length_network, source, i)[1])
 
     while max_flow < f:
 
@@ -115,36 +115,61 @@ def main(network, source, destination, f):
                 flow[n2][n1][0] -= aug_flow
                 cost -= aug_flow * network[n2][n1][1]
     # Алгоритм восстановления весов
-    vertex_a = [1]
+    vertex_a = [0]
 
-    #while len(vertex_a) > 0:
-    vertex_b = [[]] * len(vertex_a)
-    for i in range(len(vertex_a)):
-        for j in network[vertex_a[i]].keys():
-            if flow[vertex_a[i]][j][0] < network[vertex_a[i]][j][0]:
-                vertex_b[i] = [j]
-    print(vertex_b)
+    while len(vertex_a) < len(network):
+        vertex_b = {}
+        for i in vertex_a:
+            vertex_b[i] = []
+            for j in network[i].keys():
+                if flow[i][j][0] < network[i][j][0]:
+                    if j not in vertex_a:
+                        vertex_b[i].append(j)
+                        #print(vertex_b)
+        #print(vertex_b)
 
-    vertex_c = [[]] * len(vertex_a)
-    for i in range(len(vertex_a)):
-        for t in (network.keys()):
-            if t != vertex_a[i]:
-                for j in network[t].keys():
-                    if j == vertex_a[i]:
-                        if flow[t][j][0] < network[t][j][0]:
-                            vertex_c[i] = [t]
-    print(vertex_c)
+        vertex_c = {}
+        for i in vertex_a:
+            vertex_c[i] = []
+            for t in (network.keys()):
+                if t != i:
+                    for j in network[t].keys():
+                        if j == i:
+                            if flow[t][j][0] < network[t][j][0]:
+                                if t not in vertex_a:
+                                    vertex_c[j].append(t)
+                                    #print(vertex_c)
+        #print(vertex_c)
 
-    print(potentials)
-    for i in range(len(vertex_a)):
-        print(i)
-        for j in vertex_b[i]:
-            potentials[j] = potentials[vertex_a[i]] + network[vertex_a[i]][j][1]
-            print(potentials)
+        print(potentials)
+        for i in vertex_a:
+            for j in vertex_b[i]:
+                potentials[j] = potentials[i] + network[i][j][1]
+                print('+', potentials)
 
-    #for i in range(nn):
-       # for j in flow[i].keys():
-           # flow[i][j].append(potentials[j] - potentials[i])
+        for i in vertex_a:
+            for j in vertex_c[i]:
+                potentials[j] = potentials[i] - network[j][i][1]
+                print('-', potentials)
+
+        for i in vertex_b:
+            if len(vertex_b[i]) > 0:
+                vertex_a.append(vertex_b[i][0])
+                print(vertex_a)
+
+        #print('C', vertex_c)
+        for i in vertex_c:
+            #print(type(vertex_c[i]))
+            if len(vertex_c[i]) > 0:
+                vertex_a.append(vertex_c[i][0])
+                print(vertex_a)
+
+        print('mn:', vertex_a, vertex_b, vertex_c)
+
+    for i in range(nn):
+       for j in flow[i].keys():
+           print(i, j, ':' , potentials[j] - potentials[i])
+           #flow[i][j].append(potentials[j] - potentials[i])
 
     return flow
 
@@ -176,4 +201,4 @@ if __name__ == '__main__':
         #    test[i][j].append(2)
 
     #print(test)
-    #print(test[1][2][1])
+    #print(test[1][2][1])TZ
