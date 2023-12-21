@@ -1,8 +1,5 @@
 
-# @Statement : The dual algorithm to solve the minimum-cost flow problem
-# The minimum-cost flow problem aims to find the cheapest possible way of sending a certain amount of flow through a flow network.
-
-def graph_plot(graph, network, name):
+def graph_plot(graph, network, name):   #построение изображения графа
     import networkx as nx
     import matplotlib.pyplot as plt
 
@@ -20,7 +17,6 @@ def graph_plot(graph, network, name):
                     else:
                         G.add_edge(i, j, color='yellow')
 
-    #pos = nx.random_layout(G)
     pos = nx.planar_layout(G)
 
     labels = {}
@@ -39,27 +35,20 @@ def graph_plot(graph, network, name):
         font_color='black'
     )
 
-    #print(G)
-    plt.savefig(name)
+    plt.savefig(name)   #сохранение изображения
     plt.clf()
-    #plt.show()
 
 
-def count_cost(network):
+def count_cost(network):    #подсчет суммарных затрат на графе
     cost = 0
     for i in network.keys():
         for j in network[i]:
             cost += network[i][j][0]*network[i][j][1]
     return cost
 
-def Bellman_Ford(network, source, destination):
-    """
-    The Bellman-Ford algorithm to solve the shortest path problem with negative weights
-    :param network: {node1: {node2: weight, node3: weight, ...}, ...}
-    :param source: the source node
-    :param destination: the destination node
-    :return:
-    """
+
+def Bellman_Ford(network, source, destination): #алгоритм Беллмана-Форда для поиска кратчайшего маршрута
+
     # Step 1. Initialization
     nn = len(network)  # node number
     dis = [float('inf')] * nn  # the distance set
@@ -88,15 +77,8 @@ def Bellman_Ford(network, source, destination):
     return path[destination], dis[destination]
 
 
-def find_eq(network, source, destination, f):
-    """
-    The main function of the dual algorithm
-    :param network: flow network, {node1: {node2: [capacity, cost], node3: [capacity, cost], ...}, ...}
-    :param source: the source node
-    :param destination: the destination node
-    :param f: the pre-defined amount of flow
-    :return:
-    """
+def find_eq(network, source, destination, f):   #поиск равновесной загрузки сети
+
     # Step 1. Initialization
     nn = len(network)  # node number
     result_network = network
@@ -110,8 +92,7 @@ def find_eq(network, source, destination, f):
 
     # Step 2. The main loop
 
-    # Поиск начальных потенциалов
-    length_network = {}
+    length_network = {}    #Поиск начальных потенциалов
     for i in range(nn):
         length_network[i] = {}
     for i in range(nn):
@@ -141,7 +122,8 @@ def find_eq(network, source, destination, f):
         # Step 2.2. Find an augmenting path
         aug_path, aug_cost = Bellman_Ford(length_network, source, destination)
         if not aug_path:  # there does not exist an augmenting path
-            return print("No feasible solution!")
+            print("No feasible solution!")
+            return "No feasible solution!"
 
         # Step 2.3. Change the flow
         aug_flow = float('inf')
@@ -149,10 +131,10 @@ def find_eq(network, source, destination, f):
             n1 = aug_path[i]
             n2 = aug_path[i + 1]
             if n2 in network[n1].keys():
-                aug_flow = min(aug_flow, network[n1][n2][0] - flow[n1][n2][0])
+                aug_flow = min(aug_flow, network[n1][n2][0] - flow[n1][n2][0])   #пускает столко машин, сколько влезает в ребро
             else:
                 aug_flow = min(aug_flow, flow[n2][n1][0])
-        aug_flow = min(f - max_flow, aug_flow)
+        aug_flow = min(f - max_flow, aug_flow)           #сравнение текущего потока с оставшейся корреспонденицией
         max_flow += aug_flow
         for i in range(len(aug_path) - 1):
             n1 = aug_path[i]
@@ -163,7 +145,9 @@ def find_eq(network, source, destination, f):
             else:
                 flow[n2][n1][0] -= aug_flow
                 cost -= aug_flow * network[n2][n1][1]
-    # Алгоритм восстановления весов
+
+    #Алгоритм восстановления весов
+
     vertex_a = [0]
 
     while len(vertex_a) < len(network):
@@ -172,12 +156,11 @@ def find_eq(network, source, destination, f):
             vertex_b[i] = []
             for j in network[i].keys():
                 if flow[i][j][0] < network[i][j][0]:
-                    if j not in vertex_a:
-                        vertex_b[i].append(j)
-                    else:
-                        pass
-                        #print(vertex_b)
-        #print(vertex_b)
+                    if flow[i][j][0] > 0:
+                        if j not in vertex_a:
+                            vertex_b[i].append(j)
+                        else:
+                            pass
 
         vertex_c = {}
         for i in vertex_a:
@@ -187,47 +170,43 @@ def find_eq(network, source, destination, f):
                     for j in network[t].keys():
                         if j == i:
                             if flow[t][j][0] < network[t][j][0]:
-                                if t not in vertex_a:
-                                    vertex_c[j].append(t)
+                                if flow[t][j][0] > 0:
+                                    if t not in vertex_a:
+                                        vertex_c[j].append(t)
                         else:
                             pass
-                                    #print(vertex_c)
-        #print(vertex_c)
 
-        #print(potentials)
         for i in vertex_a:
             for j in vertex_b[i]:
                 potentials[j] = potentials[i] + network[i][j][1]
-                #print('+', potentials)
 
         for i in vertex_a:
             for j in vertex_c[i]:
                 potentials[j] = potentials[i] - network[j][i][1]
-                #print('-', potentials)
 
         for i in vertex_b:
             if len(vertex_b[i]) > 0:
                 vertex_a.append(vertex_b[i][0])
-                #print(vertex_a)
 
-        #print('C', vertex_c)
         for i in vertex_c:
-            #print(type(vertex_c[i]))
             if len(vertex_c[i]) > 0:
                 vertex_a.append(vertex_c[i][0])
-                #print(vertex_a)
 
-        #print('mn:', vertex_a, vertex_b, vertex_c)
+        counter = 0
+        for i in vertex_b.keys():
+            for j in vertex_c.keys():
+                counter += len(vertex_b[i]) + len(vertex_c[j])
+        if counter == 0:
+            break
 
     for i in range(nn):
         for j in flow[i].keys():
-            #print(i, j, ':', potentials[j] - potentials[i])
             flow[i][j].append(max(potentials[j] - potentials[i], network[i][j][1]))
 
     return flow
 
 
-def detect(network, source, destination):
+def detect(network, source, destination):   #алгоритм поиска браесовских ребер
     neg_network = {}
     for i in network.keys():
         neg_network[i] = network[i].copy()
@@ -242,8 +221,6 @@ def detect(network, source, destination):
         i = path[k-1]
         if neg_network[i][j] < 0:
             edges.append([j, i])
-        #print(path)
-        #print(i,j)
     return edges
 
 
@@ -255,26 +232,22 @@ if __name__ == '__main__':
         2: {1: [20, 1], 3: [10, 3]},
         3: {4: [4, 2]},
         4: {},
-    }
+    }    #тестовая сеть общего вида
 
     network_2 = {
         0: {1: [5, 1], 2: [10, 4]},
         1: {2: [10, 1], 3: [10, 4]},
         2: {3: [5, 1]},
         3: {},
-    }
+    }   #тестовая сеть парадокса Браеса
     network_3 = {
-        1: {2: [5, 1], 3: [10, 4]},
-        2: {3: [10, 1], 4: [10, 4]},
-        3: {4: [5, 1]},
-        4: {},
-    }
+        0: {1: [5, 1], 2: [10, 4]},
+        1: {2: [10, 1], 3: [10, 4]},
+        2: {1: [4, 2000], 3: [5, 1]},
+        3: {},
+    }   #тестовая сеть парадокса Браеса с двусторонним ребром
 
-    #s = 0
-    #d = 4
-    #f = 10
-
-    def pars(file):
+    def pars(file):     #парсер для файлов данных
         f = open(file, 'r')
         f.readline()
         non = int(f.readline().split(' ')[3])
@@ -285,33 +258,26 @@ if __name__ == '__main__':
 
         for line in f:
             if 'END OF METADATA' in line:
-                # (print(line))
                 break
 
         for line in f:
             if '~' in line:
-                # (print(line))
                 break
         for line in f:
             data = line.split('	')
-            # print(data)
             parsed_network[int(data[1]) - 1][int(data[2]) - 1] = []
-            # print(int(data[1]) - 1)
-            # print(int(data[2]) - 1)
             parsed_network[int(data[1]) - 1][int(data[2]) - 1].append(float(data[3]))
             parsed_network[int(data[1]) - 1][int(data[2]) - 1].append(float(data[5]))
-            #print(parsed_network)
 
         return parsed_network
 
-    def main(network, s, d, f):
+    def main(network, s, d, f):    #полный процесс поиска брессовских ребер в сети, в текущем виде не способен работать с сетями с двусторонними ребрами
         test_network = network.copy()
 
-        graph_plot(test_network, test_network, '1)Original Graph')
+        graph_plot(test_network, test_network, '1)Original Graph')      #создание и сохранение изображения первоначального графа
 
-        flow = find_eq(test_network, s, d, f).copy()
-
-        graph_plot(flow, test_network, '2)Equilibrium')
+        flow = find_eq(test_network, s, d, f).copy()    #поиск равновесия
+        graph_plot(flow, test_network, '2)Equilibrium')     #создание и сохранение изображения графа равновесия
 
         reduced_graph = {}
         for i in test_network:
@@ -326,11 +292,6 @@ if __name__ == '__main__':
                         reduced_graph[i].pop(j)
 
         graph_plot(reduced_graph, test_network, '3)Graph without full or empty edges')
-        #print(test_network)
-        #print(flow)
-        #print(reduced_graph)
-        #flow = find_eq(reduced_graph, s, d, f)
-        #print(flow)
         print(count_cost(flow))
 
         suspicious_edges = detect(reduced_graph, s, d)
@@ -341,14 +302,31 @@ if __name__ == '__main__':
             cut_graph[i] = test_network[i].copy()
         for edge in suspicious_edges:
             cut_graph[edge[0]].pop(edge[1])
-        #print(cut_graph)
         flow_new = (find_eq(cut_graph, s, d, f))
-        #print(reduced_graph)
-        #print(detect(reduced_graph, s, d))
         print(count_cost(flow_new))
         graph_plot(flow_new, test_network, '4)Equilibrium without suspicious edges')
 
-    network_go = pars('SiouxFalls_net.tntp')
-    #print(network_go)
 
-    main(network_go, 0, 23, 5000)
+    network_go = pars('SiouxFalls_net.tntp')
+
+    #банальное исключение ребер
+    s = 0
+    d = 23
+    f = 9000
+
+    #network_go = network_2
+
+    og_cost = (count_cost(find_eq(network_go, s, d, f)))
+    castrated_network = {}
+    for i in network_go.keys():
+        for j in network_go[i]:
+            for k in network_go:
+                castrated_network[k] = network_go[k].copy()
+            castrated_network[i].pop(j)
+            if find_eq(castrated_network, s, d, f) == "No feasible solution!":
+                pass
+            else:
+                if (count_cost(find_eq(castrated_network, s, d, f))) < og_cost:
+                    print('Removing edge', i, j, 'changes total costs from', og_cost, 'to', count_cost(find_eq(castrated_network, s, d, f)))
+
+    main(network_2, 0, 3, 7)
